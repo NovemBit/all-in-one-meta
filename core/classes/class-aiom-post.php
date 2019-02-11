@@ -63,9 +63,15 @@ if( ! class_exists( 'AIOM_Post_Metabox' ) ) {
 				'title'     => '',
 				'post_type' => array(),
 				'context'   => 'normal',
-				'priority'  => 'default',
+				'priority'  => $this->priority,
 			) );
 			$args[ 'post_type' ] = (array)$args[ 'post_type' ];
+			if( ! in_array( $args[ 'priority' ], array( 'high', 'low', 'default' ) ) ) {
+				$args[ 'priority' ] = $this->priority;
+			}
+			if( ! $args[ 'id' ] && $args[ 'title' ] ) {
+				$args[ 'id' ] = 'aiom-post-' . sanitize_title_with_dashes( $args[ 'title' ] );
+			}
 
 			return ( $args[ 'id' ] && $args[ 'title' ] && ! empty( $args[ 'post_type' ] ) );
 		}
@@ -104,6 +110,7 @@ if( ! class_exists( 'AIOM_Post_Metabox' ) ) {
 			parent::hooks();
 
 			add_action( 'add_meta_boxes', array( $this, 'register' ), 1 );
+			add_action( 'dbx_post_sidebar', array( $this, 'maybe_render_hash_field' ), 99999999, 1 );
 			add_action( 'aiom_save_post', array( $this, 'save' ), 10, 3 );
 			foreach( $this->post_type as $post_type ) {
 				add_filter( 'manage_' . $post_type . '_posts_columns', array( $this, 'manage_list_table_columns' ) );
@@ -150,7 +157,7 @@ if( ! class_exists( 'AIOM_Post_Metabox' ) ) {
 		 * @version 1.0.0
 		 */
 		public function render( $object ) {
-			
+
 			$meta_key = AIOM_Config::get_post_meta_key();
 			$data = (array)aiom_get_post_meta( $object->ID, $meta_key );
 
@@ -168,7 +175,19 @@ if( ! class_exists( 'AIOM_Post_Metabox' ) ) {
 			$renderer = new AIOM_Renderer( $this->get_fields(), $data, $meta_key, $this->context, $object );
 			$renderer->render();
 		}
-		
+
+		/**
+		 * Render active tab hidden hash field
+		 * @param WP_Post $post Current post object
+		 * @since 1.0.0
+		 * @version 1.0.0
+		 */
+		public function maybe_render_hash_field( $post ) {
+			if( in_array( $post->post_type, $this->post_type ) ) {
+				AIOM_Renderer::render_hash_field();
+			}
+		}
+
 		/**
 		 * Add data to data saver
 		 *
@@ -214,7 +233,6 @@ if( ! class_exists( 'AIOM_Post_Metabox' ) ) {
 			$saver = AIOM_Data_Saver::get_instance();
 			$saver->add_standalone_data( $standalone_values );
 			$saver->add_data( $meta_values );
-			
 		}
 		
 		/**
@@ -268,7 +286,7 @@ if( ! class_exists( 'AIOM_Post_Metabox' ) ) {
 			
 			/** Add data to saver: it must take care */
 			$this->add_saver_data( $post_id, $meta_data );
-			
+
 		}
 
 		/**

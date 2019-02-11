@@ -108,6 +108,8 @@ if( ! class_exists( 'AIOM_Data_Saver' ) ) {
 			foreach( $this->standalone_data as $meta_key => $meta_value ) {
 				update_post_meta( $post_id, $meta_key, $meta_value );
 			}
+
+			add_filter( 'redirect_post_location', array( $this, 'maybe_edit_object_redirect_url' ), 99999999, 1 );
 		}
 
 		/**
@@ -122,6 +124,8 @@ if( ! class_exists( 'AIOM_Data_Saver' ) ) {
 			foreach( $this->standalone_data as $meta_key => $meta_value ) {
 				update_term_meta( $term_id, $meta_key, $meta_value );
 			}
+
+			add_filter( 'redirect_term_location', array( $this, 'maybe_edit_object_redirect_url' ), 99999999, 1 );
 		}
 
 		/**
@@ -136,6 +140,27 @@ if( ! class_exists( 'AIOM_Data_Saver' ) ) {
 			foreach( $this->standalone_data as $meta_key => $meta_value ) {
 				update_user_meta( $user_id, $meta_key, $meta_value );
 			}
+
+			add_filter( 'get_edit_user_link', array( $this, 'maybe_edit_object_redirect_url' ), 99999999, 1 );
+		}
+
+		/**
+		 * Edit post redirect location and add active tab hash if any
+		 * @param string $url     Current location
+		 *
+		 * @return string
+		 */
+		public function maybe_edit_object_redirect_url( $url ) {
+			if(
+				isset( $_POST[ 'has_aiom_data' ] )
+				&& $_POST[ 'has_aiom_data' ]
+				&& isset( $_POST[ 'aiom_active_tab_hash' ] )
+				&& $_POST[ 'aiom_active_tab_hash' ]
+			) {
+				$url = add_query_arg( 'aiom-tab', $_POST[ 'aiom_active_tab_hash' ], $url );
+			}
+
+			return $url;
 		}
 
 	}

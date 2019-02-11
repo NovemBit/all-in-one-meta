@@ -40,7 +40,7 @@ if ( ! class_exists( 'AIOM_Multicheck_Field' ) && class_exists( 'AIOM_Base_Field
 		 * @version 1.0.0
 		 */
 		private function set_choices( $args ) {
-			if( isset( $args[ 'choices' ] ) && is_array( $args[ 'choices' ] ) ) {
+			if( isset( $args[ 'choices' ] ) ) {
 				if( is_callable( $args[ 'choices' ] ) ) {
 					$this->choices = call_user_func( $args[ 'choices' ] );
 				} elseif( is_array( $args[ 'choices' ] ) ) {

@@ -34,6 +34,12 @@ if( ! class_exists( 'AIOM_Taxonomy_Metabox' ) ) {
 		private $taxonomy = array();
 
 		/**
+		 * Holds priority for meta boxes form rendering hooks
+		 * @var int
+		 */
+		private $priority = 10;
+
+		/**
 		 * Parse and validate metabox configuration
 		 *
 		 * @param array $args
@@ -45,11 +51,16 @@ if( ! class_exists( 'AIOM_Taxonomy_Metabox' ) ) {
 			$args = wp_parse_args( $args, array(
 				'id'        => '',
 				'title'     => '',
-				'taxonomy' => array()
+				'taxonomy'  => array(),
+				'priority'  => $this->priority
 			) );
 			$args[ 'taxonomy' ] = (array)$args[ 'taxonomy' ];
+			$args[ 'priority' ] = absint( $args[ 'priority' ] );
+			if( ! $args[ 'id' ] && $args[ 'title' ] ) {
+				$args[ 'id' ] = 'aiom-term-' . sanitize_title_with_dashes( $args[ 'title' ] );
+			}
 
-			return ! empty( $args[ 'taxonomy' ] );
+			return ( $args[ 'id' ] && $args[ 'title' ] && ! empty( $args[ 'taxonomy' ] ) );
 		}
 
 		/**
@@ -63,6 +74,7 @@ if( ! class_exists( 'AIOM_Taxonomy_Metabox' ) ) {
 			$this->id       = $args[ 'id' ];
 			$this->title    = $args[ 'title' ];
 			$this->taxonomy = $args[ 'taxonomy' ];
+			$this->priority = $args[ 'priority' ];
 		}
 		
 		/**
@@ -89,15 +101,20 @@ if( ! class_exists( 'AIOM_Taxonomy_Metabox' ) ) {
 		protected function hooks() {
 			parent::hooks();
 
-			add_action( 'aiom_save_term', array( $this, 'save' ), 10, 2 );
 			if( is_admin() && isset( $_REQUEST['taxonomy'] ) ) {
 				foreach ( $this->taxonomy as $taxonomy ) {
-					add_action( $taxonomy . '_edit_form', array( $this, 'render_edit_form' ), 10, 1 );
-					add_action( $taxonomy . '_add_form_fields', array( $this, 'render_add_form' ), 10, 1 );
+					add_action( $taxonomy . '_add_form_fields', array( $this, 'render_add_form' ), $this->priority, 1 );
+					add_action( $taxonomy . '_edit_form', array( $this, 'render_edit_form' ), $this->priority, 1 );
+
+					add_action( $taxonomy . '_add_form_fields', array( 'AIOM_Renderer', 'render_hash_field' ), 99999999 );
+					add_action( $taxonomy . '_edit_form', array( 'AIOM_Renderer', 'render_hash_field' ), 99999999 );
+
 					add_filter( 'manage_edit-' . $taxonomy . '_columns', array( $this, 'manage_list_table_columns' ), 10, 1 );
 					add_filter( 'manage_' . $taxonomy . '_custom_column', array( $this, 'edit_list_table_column_content' ), 10, 3 );
 				}
 			}
+
+			add_action( 'aiom_save_term', array( $this, 'save' ), 10, 2 );
 		}
 
 		/**

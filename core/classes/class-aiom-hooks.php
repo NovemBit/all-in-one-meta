@@ -29,8 +29,11 @@ if( ! class_exists( 'AIOM_Hooks' ) ) {
 		public static function attach() {
 			add_action( 'admin_enqueue_scripts', array( __CLASS__, 'register_assets' ) );
 			add_action( 'save_post', array( __CLASS__, 'save_post' ), 1, 2 );
+
 			add_action( 'created_term', array( __CLASS__, 'save_term' ), 1, 3 );
 			add_action( 'edit_term', array( __CLASS__, 'save_term' ), 1, 3 );
+
+			add_action( 'user_register', array( __CLASS__, 'save_user' ), 1, 1 );
 			add_action( 'personal_options_update', array( __CLASS__, 'save_user' ), 1, 1 );
 			add_action( 'edit_user_profile_update', array( __CLASS__, 'save_user' ), 1, 1 );
 		}
@@ -41,15 +44,16 @@ if( ! class_exists( 'AIOM_Hooks' ) ) {
 		 * @version 1.0.0
 		 */
 		public static function register_assets() {
+			$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 			wp_register_style(
 				'aiom-style',
-				AIOM_URL . 'core/assets/css/aiom-admin.min.css',
+				AIOM_URL . 'core/assets/css/aiom-admin' . $suffix . '.css',
 				array(),
 				'1.0.0'
 			);
 			wp_register_script(
 				'aiom-script',
-				AIOM_URL . 'core/assets/js/aiom-admin.min.js',
+				AIOM_URL . 'core/assets/js/aiom-admin' . $suffix . '.js',
 				array( 'jquery' ),
 				'1.0.0',
 				true

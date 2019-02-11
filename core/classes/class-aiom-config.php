@@ -49,7 +49,6 @@ if ( ! class_exists( 'AIOM_Config' ) ) {
 		 * Setup configuration
 		 *
 		 * @param array $args         Configuration array
-		 *
 		 * @throws Exception
 		 * @since 1.0.0
 		 * @version 1.0.0
@@ -62,20 +61,21 @@ if ( ! class_exists( 'AIOM_Config' ) ) {
 			) );
 
 			if ( ! $args[ 'post_meta_key' ] ) {
-				echo __( 'post_meta_key is required', 'aiom' ); die;
+				throw new Exception( __( 'post_meta_key is required', 'aiom' ) );
 			}
 
 			if ( ! $args[ 'tax_meta_key' ] ) {
-				echo __( 'tax_meta_key is required', 'aiom' ); die;
+				throw new Exception( __( 'tax_meta_key is required', 'aiom' ) );
 			}
 			
 			if ( ! $args[ 'user_meta_key' ] ) {
-				echo __( 'user_meta_key is required', 'aiom' ); die;
+				throw new Exception( __( 'user_meta_key is required', 'aiom' ) );
 			}
 
 			static::$post_meta_key = $args[ 'post_meta_key' ];
 			static::$tax_meta_key = $args[ 'tax_meta_key' ];
 			static::$user_meta_key = $args[ 'user_meta_key' ];
+
 		}
 
 		/**

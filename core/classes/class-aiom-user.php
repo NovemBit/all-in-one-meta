@@ -34,6 +34,12 @@ if( ! class_exists( 'AIOM_User_Metabox' ) ) {
 		private $role = array();
 
 		/**
+		 * Holds priority for meta boxes form rendering hooks
+		 * @var int
+		 */
+		private $priority = 10;
+
+		/**
 		 * Holds user fields owning status
 		 * @var bool
 		 * @since 1.0.0
@@ -75,9 +81,14 @@ if( ! class_exists( 'AIOM_User_Metabox' ) ) {
 			$args = wp_parse_args( $args, array(
 				'id'        => '',
 				'title'     => '',
-				'role'      => array( '*' )
+				'role'      => array( '*' ),
+				'priority'  => $this->priority
 			) );
 			$args[ 'role' ] = (array)$args[ 'role' ];
+			$args[ 'priority' ] = absint( $args[ 'priority' ] );
+			if( ! $args[ 'id' ] && $args[ 'title' ] ) {
+				$args[ 'id' ] = 'aiom-user-' . sanitize_title_with_dashes( $args[ 'title' ] );
+			}
 
 			return ( $args[ 'id' ] && $args[ 'title' ] && ! empty( $args[ 'role' ] ) );
 		}
@@ -90,9 +101,10 @@ if( ! class_exists( 'AIOM_User_Metabox' ) ) {
 		 * @version 1.0.0
 		 */
 		protected function setup_args( $args ) {
-			$this->id    = $args[ 'id' ];
-			$this->title = $args[ 'title' ];
-			$this->role  = $args[ 'role' ];
+			$this->id       = $args[ 'id' ];
+			$this->title    = $args[ 'title' ];
+			$this->role     = $args[ 'role' ];
+			$this->priority = $args[ 'priority' ];
 		}
 
 		/**
@@ -139,10 +151,16 @@ if( ! class_exists( 'AIOM_User_Metabox' ) ) {
 		protected function hooks() {
 			parent::hooks();
 
+			add_action( 'user_new_form', array( $this, 'render_add_form' ), $this->priority );
+			add_action( 'show_user_profile', array( $this, 'render_edit_form' ), $this->priority );
+			add_action( 'edit_user_profile', array( $this, 'render_edit_form' ), $this->priority );
+
+			add_action( 'user_new_form', array( 'AIOM_Renderer', 'render_hash_field' ), 99999999 );
+			add_action( 'show_user_profile', array( 'AIOM_Renderer', 'render_hash_field' ), 99999999 );
+			add_action( 'edit_user_profile', array( 'AIOM_Renderer', 'render_hash_field' ), 99999999 );
+
 			add_action( 'aiom_save_user', array( $this, 'save' ), 10, 1 );
-			add_action( 'user_new_form', array( $this, 'render_add_form' ) );
-			add_action( 'show_user_profile', array( $this, 'render_edit_form' ) );
-			add_action( 'edit_user_profile', array( $this, 'render_edit_form' ) );
+
 			add_filter( 'manage_users_columns', array( $this, 'manage_list_table_columns' ) );
 			add_filter( 'manage_users_custom_column', array( $this, 'edit_list_table_column_content' ), 10, 3 );
 		}
@@ -178,18 +196,18 @@ if( ! class_exists( 'AIOM_User_Metabox' ) ) {
 		 */
 		public function render_add_form() {
 
-			$meta_key = AIOM_Config::get_tax_meta_key();
-
 			$this->maybe_include_renderer();
+
 			$renderer = new AIOM_Renderer(
 				$this->get_fields(),
 				array(),
-				$meta_key,
+				AIOM_Config::get_tax_meta_key(),
 				'add',
 				array(
 					'type' => 'user',
 				),
 				array(
+					'id'    => $this->id,
 					'title' => $this->title
 				)
 			);
@@ -229,6 +247,7 @@ if( ! class_exists( 'AIOM_User_Metabox' ) ) {
 				'edit',
 				$object,
 				array(
+					'id'    => $this->id,
 					'title' => $this->title
 				)
 			);

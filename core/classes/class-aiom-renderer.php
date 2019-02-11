@@ -250,6 +250,14 @@ if( ! class_exists( 'AIOM_Renderer' ) ) {
 			
 			return $data[ 'class' ];
 		}
+
+		/**
+		 * Holds hash field rendered status
+		 * @var bool
+		 * @since 1.0.0
+		 * @version 1.0.0
+		 */
+		private static $did_hash_field = false;
 		
 		/**
 		 * AIOM_Renderer constructor.
@@ -269,116 +277,22 @@ if( ! class_exists( 'AIOM_Renderer' ) ) {
 			$this->meta_key  = $meta_key;
 			$this->context   = $context;
 			$this->object    = $object;
-			$this->args      = wp_parse_args( array(
+			$this->args      = wp_parse_args( $args, array(
 				'id'    => '',
 				'title' => ''
-			), $args );
-		}
-		
-		/**
-		 * Render structure as tabs
-		 * @since 1.0.0
-		 * @version 1.0.0
-		 */
-		private function as_tabs() { ?>
-			<div class="aiom-admin-tabs aiom-admin-tabs-horizontal">
-				<ul class="aiom-admin-tabs-menu">
-					<?php foreach ( $this->structure as $t_id => $tab ) { ?>
-						<li class="<?php echo $tab[ 'active' ] ? 'active' : ''; ?>">
-							<a href="#<?php echo $t_id; ?>">
-								<?php echo ( isset( $tab[ 'icon' ] ) && $tab[ 'icon' ] ) ? $tab[ 'icon' ] : ''; ?>
-								<?php echo $tab[ 'title' ]; ?>
-							</a>
-						</li>
-					<?php } ?>
-				</ul>
-				<div class="aiom-admin-tabs-content">
-					<?php foreach ( $this->structure as $t_id => $tab ) {
-						$this->tab_content( $tab, $t_id );
-					} ?>
-				</div>
-			</div>
-			<?php
-		}
-		
-		/**
-		 * Render structure as single tab
-		 * @since 1.0.0
-		 * @version 1.0.0
-		 */
-		private function as_single() {
-			reset( $this->structure );
-			$tab_id = key( $this->structure );
-
-			$this->tab_content( $this->structure[ $tab_id ], $tab_id, true );
+			) );
 		}
 
 		/**
-		 * Render single tab content
-		 *
-		 * @param array      $tab       Tab data
-		 * @param string     $tab_id    Tab ID
-		 * @param bool|false $is_single If this is a single tab
-		 * @since 1.0.0
-		 * @version 1.0.0
+         * Get active tab hash from URL
+		 * @return string
+         * @since 1.0.0
+         * @version 1.0.0
 		 */
-		private function tab_content( $tab, $tab_id, $is_single = false ) {
-			$fields = $tab[ 'fields' ];
-			uasort( $fields, function ( $a, $b ) {
-				$a_order = isset( $a[ 'order' ] ) ? absint( $a[ 'order' ] ) : 0;
-				$b_order = isset( $b[ 'order' ] ) ? absint( $b[ 'order' ] ) : 0;
+		private static function get_tab_hash_from_query() {
+		    return ( isset( $_GET[ 'aiom-tab' ] ) && $_GET[ 'aiom-tab' ] ) ? $_GET[ 'aiom-tab' ] : '';
+        }
 
-				if( $a_order == $b_order ) {
-					$a_order = isset( $a[ 'sub_order' ] ) ? absint( $a[ 'sub_order' ] ) : 0;
-					$b_order = isset( $b[ 'sub_order' ] ) ? absint( $b[ 'sub_order' ] ) : 0;
-				}
-				
-				return ( $a_order - $b_order );
-			} );
-			
-			$class = 'aiom-admin-tab-content';
-			if( $is_single || $tab[ 'active' ] ) {
-				$class .= ' active';
-			} ?>
-			<div id="<?php echo esc_attr( $tab_id ); ?>" class="<?php echo esc_attr( $class ); ?>">
-				<?php
-				foreach ( $fields as $name => $field ) {
-					if( ! ( isset( $field[ 'name' ] ) && $field[ 'name' ] ) ) {
-						$field = array_merge( $field, array( 'id' => $name, 'name' => $name ) );
-					}
-					$this->field( $field, $tab_id );
-				} ?>
-			</div>
-			<?php
-		}
-
-		/**
-		 * Render flagman hidden field to indicate data save requirement
-		 * @since 1.0.0
-		 * @version 1.0.0
-		 */
-		private function render_flagman() {
-			echo '<input type="hidden" name="has_aiom_data" value="1" />';
-		}
-		
-		/**
-		 * Render field
-		 *
-		 * @param array       $field  Field arguments
-		 * @param string|bool $tab_id Field tab ID
-		 * @since 1.0.0
-		 * @version 1.0.0
-		 */
-		private function field( $field, $tab_id = false ) {
-
-			if( $handler = self::get_field_handler( $field[ 'type' ] ) ) {
-				/** @var $instance AIOM_Base_Field */
-				$instance = new $handler( $field, $tab_id, $this->data, $this->structure, $this->meta_key );
-				$instance->render();
-			}
-			
-		}
-		
 		/**
 		 * Render structure
 		 * @since 1.0.0
@@ -426,6 +340,155 @@ if( ! class_exists( 'AIOM_Renderer' ) ) {
 				</div>
 			</div>
 			<?php
+		}
+
+		/**
+         * Get tab unique hash
+		 * @param string $tab_id Current tab ID
+		 *
+		 * @return string
+         * @since 1.0.0
+         * @version 1.0.0
+		 */
+		private function get_tab_hash( $tab_id ) {
+            return substr( md5( $this->args[ 'id' ] . '-' . $tab_id ), 0, 7 );
+        }
+
+		/**
+         * Check for tab activity
+		 * @param string $tab_id  Tab ID
+		 * @param bool   $default Tab activity default state
+		 *
+		 * @return bool
+         * @since 1.0.0
+         * @version 1.0.0
+		 */
+		private function is_tab_active( $tab_id, $default ) {
+            if( $hash = self::get_tab_hash_from_query() ) {
+                return ( $hash == $this->get_tab_hash( $tab_id ) );
+            }
+
+            return $default;
+		}
+
+		/**
+		 * Render structure as tabs
+		 * @since 1.0.0
+		 * @version 1.0.0
+		 */
+		private function as_tabs() { ?>
+            <div class="aiom-admin-tabs aiom-admin-tabs-horizontal">
+                <ul class="aiom-admin-tabs-menu">
+					<?php foreach ( $this->structure as $tab_id => $tab ) {
+					    $is_active = $this->is_tab_active( $tab_id, $tab[ 'active' ] ); ?>
+                        <li class="<?php echo $is_active ? 'active' : ''; ?>" data-hash="<?php echo $this->get_tab_hash( $tab_id ); ?>">
+                            <a href="#<?php echo $tab_id; ?>">
+								<?php echo ( isset( $tab[ 'icon' ] ) && $tab[ 'icon' ] ) ? $tab[ 'icon' ] : ''; ?>
+								<?php echo $tab[ 'title' ]; ?>
+                            </a>
+                        </li>
+					<?php } ?>
+                </ul>
+                <div class="aiom-admin-tabs-content">
+					<?php foreach ( $this->structure as $tab_id => $tab ) {
+						$this->tab_content( $tab, $tab_id );
+					} ?>
+                </div>
+            </div>
+			<?php
+		}
+
+		/**
+		 * Render structure as single tab
+		 * @since 1.0.0
+		 * @version 1.0.0
+		 */
+		private function as_single() {
+			reset( $this->structure );
+			$tab_id = key( $this->structure );
+
+			$this->tab_content( $this->structure[ $tab_id ], $tab_id, true );
+		}
+
+		/**
+		 * Render single tab content
+		 *
+		 * @param array      $tab       Tab data
+		 * @param string     $tab_id    Tab ID
+		 * @param bool|false $is_single If this is a single tab
+		 * @since 1.0.0
+		 * @version 1.0.0
+		 */
+		private function tab_content( $tab, $tab_id, $is_single = false ) {
+			$fields = $tab[ 'fields' ];
+			uasort( $fields, function ( $a, $b ) {
+				$a_order = isset( $a[ 'order' ] ) ? absint( $a[ 'order' ] ) : 0;
+				$b_order = isset( $b[ 'order' ] ) ? absint( $b[ 'order' ] ) : 0;
+
+				if( $a_order == $b_order ) {
+					$a_order = isset( $a[ 'sub_order' ] ) ? absint( $a[ 'sub_order' ] ) : 0;
+					$b_order = isset( $b[ 'sub_order' ] ) ? absint( $b[ 'sub_order' ] ) : 0;
+				}
+
+				return ( $a_order - $b_order );
+			} );
+
+			$class = 'aiom-admin-tab-content';
+			if( $is_single || $this->is_tab_active( $tab_id, $tab[ 'active' ] ) ) {
+				$class .= ' active';
+			} ?>
+            <div id="<?php echo esc_attr( $tab_id ); ?>" class="<?php echo esc_attr( $class ); ?>">
+				<?php
+				foreach ( $fields as $name => $field ) {
+					$field[ 'id' ] = $name;
+					if( ! ( isset( $field[ 'name' ] ) && $field[ 'name' ] ) ) {
+						$field = array_merge( $field, array( 'name' => $name ) );
+					}
+					$this->field( $field, $tab_id );
+				} ?>
+            </div>
+			<?php
+		}
+
+		/**
+		 * Render flagman hidden field to indicate data save requirement
+		 * @since 1.0.0
+		 * @version 1.0.0
+		 */
+		private function render_flagman() {
+			echo '<input type="hidden" name="has_aiom_data" value="1" />';
+		}
+
+		/**
+		 * Render active tab hidden hash field
+         * @since 1.0.0
+         * @version 1.0.0
+		 */
+		public static function render_hash_field() {
+			if( self::$did_hash_field ) {
+				return;
+			}
+
+			echo '<input type="hidden" id="aiom-active-tab-hash" name="aiom_active_tab_hash" value="' . self::get_tab_hash_from_query() . '" />';
+			self::$did_hash_field = true;
+        }
+
+		/**
+		 * Render field
+		 *
+		 * @param array       $field  Field arguments
+		 * @param string|bool $tab_id Field tab ID
+		 * @since 1.0.0
+		 * @version 1.0.0
+		 */
+		private function field( $field, $tab_id = false ) {
+
+			if( $handler = self::get_field_handler( $field[ 'type' ] ) ) {
+				/** @var $instance AIOM_Base_Field */
+				$instance = new $handler( $field, $tab_id, $this->data, $this->structure, $this->meta_key );
+				$instance->render();
+			}
+
 		}
 		
 	}

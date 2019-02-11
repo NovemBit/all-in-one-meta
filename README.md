@@ -169,7 +169,7 @@ This callback will be automatically called to get fields structure when needed: 
                     'single_tab_field' => array(  
                         'name'     => 'single_tab_field',  
                         'type'     => 'gallery',  
-                        'priority' => 10,  
+                        'order'    => 10,  
                         'default'  => array(),  
                     ),
                     // other fields for this tab go here 

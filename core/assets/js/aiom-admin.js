@@ -2,7 +2,7 @@
     'use strict';
 
     /** Fields dependency */
-    function is_field_visible( selector, value, compare ) {
+    var is_field_visible = function( selector, value, compare ) {
         var _show,
             _node = $(selector),
             _found_nodes = _node.length,
@@ -12,29 +12,29 @@
 
         switch ( compare ) {
             case '===':
-                _show = ( _sel_val === value ) ? true : false;
+                _show = ( _sel_val === value );
                 break;
             case '==':
             case '=':
-                _show = ( _sel_val == value ) ? true : false;
+                _show = ( _sel_val == value );
                 break;
             case '!==':
-                _show = ( _sel_val !== value ) ? true : false;
+                _show = ( _sel_val !== value );
                 break;
             case '!=':
-                _show = ( _sel_val != value ) ? true : false;
+                _show = ( _sel_val != value );
                 break;
             case '>=':
-                _show = ( value >= _sel_val ) ? true : false;
+                _show = ( value >= _sel_val );
                 break;
             case '<=':
-                _show = ( value <= _sel_val ) ? true : false;
+                _show = ( value <= _sel_val );
                 break;
             case '>':
-                _show = ( value > _sel_val ) ? true : false;
+                _show = ( value > _sel_val );
                 break;
             case '<':
-                _show = ( value < _sel_val ) ? true : false;
+                _show = ( value < _sel_val );
                 break;
             case 'IN':
                 if( ! ( value instanceof Array ) ) {
@@ -44,7 +44,7 @@
                     return ( _sel_val.indexOf( nth ) !== -1 );
                 });
 
-                _show = ( intersected.length > 0 ) ? true : false;
+                _show = ( intersected.length > 0 );
                 break;
             case 'NOT IN':
                 if( ! ( value instanceof Array ) ) {
@@ -54,10 +54,10 @@
                     return ( _sel_val.indexOf( nth ) !== -1 );
                 });
 
-                _show = ( intersected.length == 0 ) ? true : false;
+                _show = ( intersected.length === 0 );
                 break;
             default:
-                _show = ( _sel_val == value ) ? true : false;
+                _show = ( _sel_val == value );
         }
 
         return _show;
@@ -65,18 +65,27 @@
 
     ////////////////////////////// Tabs //////////////////////////////
 
-    $('.aiom-admin-tabs-menu a').on('click', function(e){
-        var tab = $(this);
-        var tab_id = tab.attr('href');
-        var tab_wrap = tab.closest('.aiom-admin-tabs');
-        var tab_content = tab_wrap.find('.aiom-admin-tab-content');
+    $( '.aiom-admin-tabs-menu a' ).on( 'click', function( event ){
+        event.preventDefault();
 
-        tab.parent().addClass("active");
-        tab.parent().siblings().removeClass('active');
-        tab_content.not(tab_id).removeClass('active').hide();
-        $(tab_id).addClass('active').fadeIn(500);
+        var tab = $( this ),
+            tab_list_item = tab.parent(),
+            tab_id = tab.attr('href'),
+            tab_wrap = tab.closest('.aiom-admin-tabs'),
+            tab_content = tab_wrap.find('.aiom-admin-tab-content');
 
-        e.preventDefault();
+        $( '#aiom-active-tab-hash' ).val( tab_list_item.data( 'hash' ) );
+
+        tab_list_item.addClass( 'active' )
+            .siblings()
+                .removeClass( 'active' );
+
+        tab_content.not( tab_id )
+            .removeClass('active').css( 'display', 'none' );
+
+        $( tab_id )
+            .addClass('active').css( 'display', 'block' );
+
     });
 
     /***** remove iframe from featured video url field */
@@ -97,7 +106,6 @@
 
         var _node = $(this),
             _id = _node.attr( 'id' ),
-            _value = _node.val(),
             _depended_data_holders = $( '.aiom-advanced-fields .aiom-superior-' + _id );
 
         if( _depended_data_holders.length <= 0 ) {
@@ -149,7 +157,7 @@
     /***** color */
     if( $('.aiom-form-row-color, .aiom-form-row-multicolor' ).length > 0 ) {
         $('.aiom-form-row-color input, .aiom-form-row-multicolor input').wpColorPicker({
-            change: function (event, ui) {},
+            change: function () {},
             clear: function () {},
             hide: true
         });
